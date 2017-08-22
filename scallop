@@ -53,7 +53,8 @@ for L in $(cat Scallopfile); do
   elif [ "$PREVFUNC" != "" ]; then
 
     # echo just lines which are not blank and dont start with # or @
-    [[ "$L" =~ ^[:blank:]*$ || "$L" =~ [:blank:]*\#.*$ || "$L" =~ [:blank:]*@.*$ ]] || SLINES+=("	echo $L")
+    LSAFE=$(printf "%q" "$L")
+    [[ "$L" =~ ^[:blank:]*$ || "$L" =~ [:blank:]*\#.*$ || "$L" =~ [:blank:]*@.*$ ]] || SLINES+=("	echo $LSAFE")
   
     # Remove the @ symbol on the beginninig
     [[ "$L" =~ [:blank:]*@(.*)$ ]] && L="${BASH_REMATCH[1]}"
