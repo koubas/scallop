@@ -1,0 +1,81 @@
+#!/bin/bash
+
+if ! [ -r "Scallopfile" ]; then
+  echo "Scallopfile not found or not readable"
+  exit 1
+fi
+
+IFS=$'\n'
+
+export SHELL="/bin/bash"
+
+SLINES=("#!/bin/bash")
+FUNCS=()
+FUNCS_DONE=()
+PREVFUNC=""
+
+if [ "$1" == "" ]; then
+  TARGET="all"
+else
+  TARGET="$1"
+fi
+
+for L in $(cat Scallopfile); do
+  if [[ $L =~ ^([a-zA-Z0-1_-]+):(.*)$ ]]; then
+    FUNC=${BASH_REMATCH[1]}
+    ARGS=${BASH_REMATCH[2]}
+    DEPS=()
+
+    # Analyze target args
+    if ! [[ "$ARGS" =~ ^[:blank:]*$ ]]; then
+      OLDIFS="$IFS"
+      IFS=" "
+      for ARG in $ARGS; do
+        DEPS+=("$ARG")
+      done
+      IFS="$OLDIFS"
+    fi
+
+    # Terminate previous function
+    if [ "$PREVFUNC" != "" ]; then
+      SLINES+=("}")
+    fi
+
+    FUNCS+=("${FUNC}")
+
+    SLINES+=("function ${FUNC} {")
+    SLINES+=("	: one command at least")
+
+    for D in "${DEPS[@]}"; do
+      SLINES+=("	$D")
+    done
+
+  elif [ "$PREVFUNC" != "" ]; then
+
+    # echo just lines which are not blank and dont start with # or @
+    [[ "$L" =~ ^[:blank:]*$ || "$L" =~ [:blank:]*\#.*$ || "$L" =~ [:blank:]*@.*$ ]] || SLINES+=("	echo $L")
+  
+    # Remove the @ symbol on the beginninig
+    [[ "$L" =~ [:blank:]*@(.*)$ ]] && L="${BASH_REMATCH[1]}"
+  
+    SLINES+=("$L")
+
+  fi
+
+  PREVFUNC=$FUNC
+
+done
+
+if [ "$PREVFUNC" != "" ]; then
+  SLINES+=("}")
+fi
+
+SLINES+=("${TARGET}")
+
+for L in "${SLINES[@]}"; do
+  SCRIPT=${SCRIPT}${L}$'\n'
+done
+
+# echo "$SCRIPT"
+
+echo "${SCRIPT}" | $SHELL

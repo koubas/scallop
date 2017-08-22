@@ -1,0 +1,17 @@
+# This is a demo Scallopfile
+
+all: build install clean
+
+build:
+	# build a project
+	@echo Building
+	ls
+	
+
+install:
+	# Pretend doing something
+	free
+
+clean:
+	# make things shiny
+	true
